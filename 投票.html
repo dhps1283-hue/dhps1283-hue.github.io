@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>夏日涼感萬能巾 - 即時複選投票</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f8f8f8;
+        text-align: center;
+        padding: 20px;
+    }
+    h1 { color: #333; }
+    .container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        max-width: 1000px;
+        margin: auto;
+    }
+    .card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 10px;
+    }
+    .card img {
+        width: 100%;
+        border-radius: 5px;
+    }
+    .checkbox {
+        margin-top: 10px;
+    }
+    .btn {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        margin-top: 15px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 16px;
+    }
+    .btn:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+    .result {
+        margin-top: 8px;
+        font-size: 14px;
+        color: #666;
+    }
+</style>
+</head>
+<body>
+
+<h1>夏日涼感萬能巾 - 花色投票</h1>
+<p>請勾選你喜歡的花色（可複選），然後按下送出</p>
+
+<img src="https://res.cloudinary.com/duokreryr/image/upload/v1755256844/1257527f-59a5-4999-9ff1-6abdc1d3f452.png" alt="用法">
+
+
+
+<div class="container">
+    <div class="card">
+        <img src="https://res.cloudinary.com/duokreryr/image/upload/v1755256135/1755255696199_2x_b1rkxd.jpg" alt="水波紋">
+        <div><input type="checkbox" class="checkbox" value="0"> 水波紋</div>
+        <div class="result" id="result0">尚無投票</div>
+    </div>
+    <div class="card">
+        <img src="https://res.cloudinary.com/duokreryr/image/upload/v1755256135/1755255711213_2x_hdpqdw.jpg" alt="清新森林">
+        <div><input type="checkbox" class="checkbox" value="1"> 清新森林</div>
+        <div class="result" id="result1">尚無投票</div>
+    </div>
+    <div class="card">
+        <img src="https://res.cloudinary.com/duokreryr/image/upload/v1755256134/1755255680477_2x_whjmxx.jpg" alt="海洋地圖">
+        <div><input type="checkbox" class="checkbox" value="2"> 海洋地圖</div>
+        <div class="result" id="result2">尚無投票</div>
+    </div>
+    <div class="card">
+        <img src="https://res.cloudinary.com/duokreryr/image/upload/v1755256134/1755255670210_2x_tnkhai.jpg" alt="礦石紋">
+        <div><input type="checkbox" class="checkbox" value="3"> 礦石紋</div>
+        <div class="result" id="result3">尚無投票</div>
+    </div>
+</div>       <div class="card">
+        <img src="https://res.cloudinary.com/duokreryr/image/upload/v1754743535/samples/animals/three-dogs.jpg" alt="都不喜歡">
+        <div><input type="checkbox" class="checkbox" value="3"> 都不喜歡</div>
+        <div class="result" id="result3">尚無投票</div>
+    </div>
+</div>
+
+<button class="btn" id="voteBtn">送出投票</button>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+<script>
+    // 替換成你自己的 Firebase 設定
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let hasVoted = localStorage.getItem("voted") === "true";
+
+    function updateResults(votes) {
+        let total = votes.reduce((a, b) => a + b, 0);
+        votes.forEach((v, i) => {
+            let percent = total ? ((v / total) * 100).toFixed(1) : 0;
+            document.getElementById("result" + i).innerText =
+                `${v} 票 (${percent}%)`;
+        });
+    }
+
+    // 即時監聽資料
+    db.ref("votes").on("value", snapshot => {
+        let votes = snapshot.val() || [0,0,0,0];
+        updateResults(votes);
+    });
+
+    document.getElementById("voteBtn").addEventListener("click", () => {
+        if (hasVoted) {
+            alert("你已經投過票了！");
+            return;
+        }
+        let checkboxes = document.querySelectorAll(".checkbox:checked");
+        if (checkboxes.length === 0) {
+            alert("請至少選擇一個花色！");
+            return;
+        }
+        db.ref("votes").once("value").then(snapshot => {
+            let votes = snapshot.val() || [0,0,0,0];
+            checkboxes.forEach(cb => {
+                votes[parseInt(cb.value)]++;
+            });
+            db.ref("votes").set(votes);
+            localStorage.setItem("voted", "true");
+            hasVoted = true;
+        });
+    });
+</script>
+
+</body>
+</html>
